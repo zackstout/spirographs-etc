@@ -1,0 +1,31 @@
+image: function (index: number, src: string): HTMLDivElement {
+    const div = document.createElement("div");
+    div.id = `content-${index}`;
+    div.classList.add("absolute", "w-full", "h-full", "bg-gray-700");
+
+    const bg = document.createElement("div");
+    bg.classList.add(
+      "absolute",
+      "-inset-12",
+      "blur-2xl",
+      "bg-cover",
+      "bg-center",
+      "z-10"
+    );
+    bg.style.backgroundImage = `url(${src})`;
+
+    const img = document.createElement("img");
+    img.src = src;
+    img.classList.add(
+      "absolute",
+      "w-full",
+      "h-full",
+      "object-contain",
+      "z-20",
+      "shadow-2xl"
+    );
+
+    div.appendChild(bg);
+    div.appendChild(img);
+    return div;
+  },

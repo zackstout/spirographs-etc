@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LJ curves</title>
+
+    <style>
+      #container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+      }
+
+      #container div {
+        margin: 0 1rem;
+      }
+
+      svg {
+        width: 25vh;
+        height: 25vh;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>LJ Curves</h2>
+
+    <div id="container"></div>
+
+    <script>
+      const container = document.getElementById("container");
+      const ratios = [
+        [1, 1],
+        [1, 2],
+        [2, 3],
+        [3, 4],
+        [4, 5],
+        [5, 6],
+        [6, 7],
+        [7, 8],
+      ];
+      let timePassed = 0;
+
+      const makePath = (pts) => {
+        return pts.reduce((acc, pt, i) => {
+          if (i === 0) {
+            return `M ${pt.x} ${pt.y}`;
+          }
+          if (i === pts.length - 1) {
+            return `${acc} L ${pt.x} ${pt.y} Z`;
+          }
+          return `${acc} L ${pt.x} ${pt.y}`;
+        }, "");
+      };
+
+      const makeLissaJousPath = (a, b, time) => {
+        const pts = [];
+        const SIZE = 48;
+        const CENTER = 50;
+        for (let t = 0; t < 2 * Math.PI; t += 0.01) {
+          const x = CENTER + SIZE * Math.sin(a * t + time);
+          const y = CENTER + SIZE * Math.sin(b * t);
+          pts.push({ x, y });
+        }
+        return makePath(pts);
+      };
+
+      const update = () => {
+        container.innerHTML = "";
+
+        for (let ratio of ratios) {
+          // MUST CREATE WITH CREATEELEMENTNS, NOT JUST CREATEELEMENT
+          const svg = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "svg"
+          );
+          svg.setAttributeNS(
+            "http://www.w3.org/2000/svg",
+            "viewBox",
+            "0 0 100 100"
+          );
+          container.appendChild(svg);
+
+          svg.innerHTML = `<path d="${makeLissaJousPath(
+            ...ratio,
+            timePassed
+          )}" stroke="black" fill="none" />`;
+        }
+      };
+
+      const run = () => {
+        update();
+        animate();
+      };
+
+      window.onload = run;
+
+      const animate = () => {
+        // console.log("animate");
+        timePassed += 0.01;
+        update();
+        requestAnimationFrame(animate);
+      };
+    </script>
+  </body>
+</html>

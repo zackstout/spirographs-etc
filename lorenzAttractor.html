@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Strange attractor</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas></canvas>
+
+    <script>
+      const canvas = document.querySelector("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const center = { x: canvas.width / 2, y: canvas.height / 2 };
+      const SIZE = 5;
+
+      const lorenzConfig = {
+        sigma: 10,
+        rho: 28,
+        beta: 8 / 3,
+      };
+
+      let time = 0;
+      let position = { x: 1, y: 0, z: 0 };
+
+      const run = () => {
+        animate();
+      };
+
+      // Update position of particle based on Lorenz equations
+      const updatePosition = () => {
+        const dt = 0.01;
+        const dx = lorenzConfig.sigma * (position.y - position.x);
+        const dy = position.x * (lorenzConfig.rho - position.z) - position.y;
+        const dz = position.x * position.y - lorenzConfig.beta * position.z;
+        position.x += dx * dt;
+        position.y += dy * dt;
+        position.z += dz * dt;
+      };
+
+      const animate = () => {
+        time += 0.005;
+
+        updatePosition();
+
+        ctx.beginPath();
+        ctx.fillStyle = "rgb(255,255,255)";
+        const SCALE = 10;
+        ctx.arc(
+          center.x + SCALE * position.y - SIZE / 2,
+          center.y + SCALE * position.z - SIZE / 2,
+          SIZE,
+          0,
+          2 * Math.PI
+        );
+        ctx.fill();
+
+        ctx.globalAlpha = 0.05;
+        ctx.fillStyle = "rgb(0,0,0)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        requestAnimationFrame(animate);
+      };
+
+      window.onload = run;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>L Systems</title>
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      .controls {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        bottom: 90vh;
+        background: lightblue;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .control {
+        margin: 2rem;
+        font-size: 1rem;
+        font-family: monospace;
+      }
+
+      .control div {
+        margin-bottom: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls">
+      <div class="control">
+        <div>Rules</div>
+        <select></select>
+      </div>
+      <div class="control">
+        <div>Ray length</div>
+        <input data-value="length" type="range" min="1" max="200" value="40" />
+      </div>
+      <div class="control">
+        <div>Angle</div>
+        <input data-value="angle" type="range" min="1" max="100" value="30" />
+      </div>
+      <div class="control">
+        <div>Number Generations</div>
+        <input
+          data-value="numGenerations"
+          type="range"
+          min="1"
+          max="10"
+          value="2"
+        />
+      </div>
+      <div class="control">
+        <div>Dampening</div>
+        <input
+          data-value="dampening"
+          type="range"
+          min="0.2"
+          max="1.0"
+          value="0.6"
+          step="0.1"
+        />
+      </div>
+    </div>
+    <canvas></canvas>
+
+    <script>
+      // So one issue is.... we are re-drawing over early stuff a bunch of times...
+      // NOTE: the max num generations (before we hit performance issues) depends on the rules of the L system
+      // NOTE: issues with ray length differing depending on numgenerations and also which system..
+
+      // NOTE: Animating dampening (from 0 to 1) is a pretty cool way to visualize "growth" of some kind..
+      // NOTE: dampening is poorly named, should really be (1 - dampening)
+
+      const lSystems = [
+        {
+          value: 0,
+          axiom: "F",
+          rules: {
+            F: "F[-F][+F]",
+          },
+        },
+        {
+          value: 1,
+          axiom: "F",
+          rules: {
+            F: "FF+[+F-F-F]-[-F+F+F]",
+          },
+        },
+        {
+          value: 2,
+          axiom: "X",
+          rules: {
+            X: "F[+X]F[-X]+X",
+            F: "FF",
+          },
+        },
+        {
+          value: 3,
+          axiom: "X",
+          rules: {
+            X: "-F[+F][---X]+F-F[++++X]-X",
+            F: "FF",
+          },
+        },
+      ];
+
+      let lSystem = lSystems[0];
+
+      const config = {
+        angle: 30,
+        length: 40,
+        numgenerations: 2,
+        dampening: 0.6,
+      };
+
+      const expandSystem = (str) => {
+        let newStr = "";
+        for (let i = 0; i < str.length; i++) {
+          const char = str[i];
+          if (lSystem.rules[char]) {
+            newStr += lSystem.rules[char];
+          } else {
+            newStr += char;
+          }
+        }
+        return newStr;
+      };
+
+      const expandSystemNTimes = (str, n) => {
+        let newStr = str;
+        for (let i = 0; i < n; i++) {
+          newStr = expandSystem(newStr);
+        }
+        return newStr;
+      };
+
+      const drawSystem = (str) => {
+        // Characters: "+", "-", "[", "]", and "F".
+        // When we encounter "[" we need to remember our location, and return to it when we see "]".
+
+        const canvas = document.querySelector("canvas");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext("2d");
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const pos = { x: canvas.width / 2, y: canvas.height * 0.9 };
+        let currentAngle = -Math.PI / 2;
+        const stack = [];
+
+        const configAngleRadians = (config.angle * Math.PI) / 180;
+
+        for (let i = 0; i < str.length; i++) {
+          const char = str[i];
+          switch (char) {
+            case "F":
+              const x1 = pos.x;
+              const y1 = pos.y;
+              // Make the rays shorter as we go deeper into the tree
+              const length =
+                config.length * Math.pow(config.dampening, stack.length);
+              pos.x += length * Math.cos(currentAngle);
+              pos.y += length * Math.sin(currentAngle);
+              const x2 = pos.x;
+              const y2 = pos.y;
+              ctx.beginPath();
+              ctx.moveTo(x1, y1);
+              ctx.lineTo(x2, y2);
+              ctx.stroke();
+              break;
+            case "+":
+              currentAngle += configAngleRadians;
+              break;
+            case "-":
+              currentAngle -= configAngleRadians;
+              break;
+            case "[":
+              stack.push({ x: pos.x, y: pos.y, angle: currentAngle });
+              break;
+            case "]":
+              const { x, y, angle } = stack.pop();
+              pos.x = x;
+              pos.y = y;
+              currentAngle = angle;
+              break;
+            default:
+              break;
+          }
+        }
+      };
+
+      const run = () => {
+        const system = expandSystemNTimes(lSystem.axiom, config.numgenerations);
+        drawSystem(system);
+
+        document.querySelector("select").innerHTML = lSystems
+          .map((lSystem) => {
+            return `<option value="${lSystem.value}">${lSystem.rules.F}</option>`;
+          })
+          .join("");
+
+        document.querySelector("select").addEventListener("change", (e) => {
+          const { value } = e.target;
+          lSystem = lSystems.find((l) => l.value == value);
+          const system = expandSystemNTimes(
+            lSystem.axiom,
+            config.numgenerations
+          );
+          drawSystem(system);
+        });
+
+        document.querySelectorAll("input").forEach((input) => {
+          input.addEventListener("input", (e) => {
+            const { value } = e.target;
+            const id = e.target.dataset.value;
+            config[id.toLowerCase()] = parseFloat(value);
+            const system = expandSystemNTimes(
+              lSystem.axiom,
+              config.numgenerations
+            );
+            drawSystem(system);
+          });
+        });
+      };
+
+      window.onload = run;
+
+      window.print = () => {
+        console.log(config);
+      };
+    </script>
+  </body>
+</html>

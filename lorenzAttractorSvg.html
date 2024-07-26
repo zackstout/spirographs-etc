@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lorenz</title>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      h2 {
+        margin-bottom: 1rem;
+      }
+
+      svg {
+        width: 50vh;
+        height: 50vh;
+        margin: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Strange Lorenz</h2>
+    <div>
+      <svg data-plane="xz" viewBox="0 0 100 100"></svg>
+
+      <svg data-plane="yz" viewBox="0 0 100 100"></svg>
+
+      <svg data-plane="xy" viewBox="0 0 100 100"></svg>
+    </div>
+
+    <script>
+      const svgs = document.querySelectorAll("svg");
+
+      const lorenzConfig = {
+        sigma: 10,
+        rho: 28,
+        beta: 8 / 3,
+      };
+
+      const makePath = (pts) => {
+        return pts.reduce((acc, pt, i) => {
+          if (i === 0) {
+            return `M ${pt.x} ${pt.y}`;
+          }
+          //   if (i === pts.length - 1) {
+          //     return `${acc} L ${pt.x} ${pt.y} Z`;
+          //   }
+          return `${acc} L ${pt.x} ${pt.y}`;
+        }, "");
+      };
+
+      const updatePosition = (position) => {
+        const dt = 0.01;
+        const dx = lorenzConfig.sigma * (position.y - position.x);
+        const dy = position.x * (lorenzConfig.rho - position.z) - position.y;
+        const dz = position.x * position.y - lorenzConfig.beta * position.z;
+        // position.x += Math.max(dx * dt, 0);
+        // position.y += Math.max(dy * dt, 0);
+        // position.z += Math.max(dz * dt, 0);
+        position.x += dx * dt;
+        position.y += dy * dt;
+        position.z += dz * dt;
+      };
+
+      const makeLorenzPts = (plane = "xz") => {
+        let position = { x: 1, y: 0, z: 0 };
+        const pts = [];
+        const SCALE = 1.5;
+
+        for (let i = 0; i < 5000; i++) {
+          updatePosition(position);
+
+          switch (plane) {
+            case "xz":
+              pts.push({
+                x: position.x * SCALE + 50,
+                y: position.z * SCALE + 15,
+              });
+
+              break;
+            case "yz":
+              pts.push({
+                x: position.y * SCALE + 50,
+                y: position.z * SCALE + 15,
+              });
+
+              break;
+            case "xy":
+              pts.push({
+                x: position.x * SCALE + 50,
+                y: position.y * SCALE + 55,
+              });
+
+              break;
+          }
+        }
+        return pts;
+      };
+
+      /**
+       * NEXT: Could add config for the 3 variables.
+       * Button to randomize config.
+       * Some kind of animation...
+       *
+       * Could add coloration. -- Can you add a gradient to a path in SVG?
+       * https://stackoverflow.com/questions/14633363/can-i-apply-a-gradient-along-an-svg-path
+       * https://gist.github.com/mbostock/4163057
+       */
+
+      const run = () => {
+        svgs.forEach((svg) => {
+          const plane = svg.getAttribute("data-plane");
+          const pts = makeLorenzPts(plane);
+          const path = makePath(pts);
+          svg.innerHTML = `<path d="${path}" fill="none" stroke="black" stroke-width="0.25" />`;
+        });
+      };
+
+      window.onload = run;
+    </script>
+  </body>
+</html>
